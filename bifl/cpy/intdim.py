@@ -5,7 +5,7 @@ from os.path import abspath, dirname, join
 DN = dirname(abspath(__file__))
 
 
-def intdim(inmat):
+def intdim(inmat):  # Uses kernelsize 61, sd = 10, at the moment
     out0 = cv.CreateMat(inmat.rows, inmat.cols, cv.CV_32FC1)
     out1 = cv.CreateMat(inmat.rows, inmat.cols, cv.CV_32FC1)
     out2 = cv.CreateMat(inmat.rows, inmat.cols, cv.CV_32FC1)

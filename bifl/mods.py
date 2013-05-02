@@ -3,16 +3,19 @@ Feature Functions
 """
 
 import cv
+import logging
 import numpy as np
 
 from utils import sameMat
-
 
 class ZeroFeatureException(ZeroDivisionError):
     pass
 
 
-def contrast(inmat, ws = 51):
+constrastLogger = logging.getLogger("mods.contrast")
+def contrast(inmat, ws = 41):  # Former: 51, pixels per degree?
+    constrastLogger.debug("Kernel size for normal contrast: %s" % ws)
+
     sq = sameMat(inmat)
     smth = sameMat(inmat)
     outmat = sameMat(inmat)
@@ -28,9 +31,12 @@ def contrast(inmat, ws = 51):
     return outmat
 
 
-def smooth(inmat, ws = 51):
+smoothLogger = logging.getLogger("mods.smooth")
+def smooth(inmat, ws = 41):  # Former 51
+    smoothLogger.debug("Kernel size for smooth: %s" % ws)
     outmat = sameMat(inmat)
-    cv.Smooth(inmat, outmat, cv.CV_GAUSSIAN, ws, ws)
+    cv.Smooth(inmat, outmat, cv.CV_GAUSSIAN, ws, ws)  # a third parameter could adjust the SD of the gaussian!
+    # otherwise sigma is automatically calculated by 0.3 * (ws/2-1) + 0.8
     return outmat
 
 
@@ -68,8 +74,8 @@ def zscale(inmat):
     outmat = cv.CloneMat(inmat)
     mean, dev = cv.AvgSdv(outmat)
     if dev[0] != 0:
-        cv.SubS(inmat, mean, outmat)
-        cv.Scale(outmat, outmat, 1.0 / dev[0])
+        cv.SubS(inmat, mean, outmat)  # inmat + mean are input array and input scalar (maybe 4 scalars for 4 channgls)
+        cv.Scale(outmat, outmat, 1.0 / dev[0])  # division by standard deviation
     else:
         raise ZeroFeatureException("Zero mat %r" % (inmat,))
     return outmat
@@ -152,13 +158,15 @@ def spatialbias(inmat, biasmat, (x, y), base=1.0, gain=1.0, bias_zero=None):
     tarRect = cv.GetSubRect(tarbias, (tarX, tarY, srcW, srcH))
     cv.Copy(srcRect, tarRect)
 
-    cv.Normalize(tarbias, tarbias, base, base + gain, cv.CV_MINMAX)
+    cv.Normalize(tarbias, tarbias, base, base + gain, cv.CV_MINMAX) # wahrscheinllich Normalisierung auf den Bereich
+    # zwischen base und base+gain, sodass die werte unter base auf base gesetzt werden und alle werte über base
+    # +gain auf base+gain gesetzt werden
     cv.Normalize(inmat, inmat, 0, 1, cv.CV_MINMAX)
     cv.Mul(inmat, tarbias, outmat)
     return outmat
 
 
-def maxior(inmat, steps=10, inhibition=0.2, radius=90):
+def maxior(inmat, steps=10, inhibition=0.2, radius=90):  # not sure where it is used
     sal = cv.CloneMat(inmat)
     mul = cv.CreateMat(inmat.rows, inmat.cols, cv.CV_32FC1)
     cvg = cv.CreateMat(inmat.rows, inmat.cols, cv.CV_32FC1)
